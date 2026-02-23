@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+build/
+dist/
+
+# Docker (если есть секреты)
+.env
+
+# OS
+.DS_Store
+Thumbs.db

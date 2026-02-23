@@ -1,0 +1,7 @@
+services:
+  web:
+    build: ./app
+    container_name: pet-fastapi
+    ports:
+      - "8000:8000"
+    restart: always
