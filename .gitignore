@@ -13,3 +13,11 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# Игнорируем всё, что связано с terraform в любых подпапках
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+.terraform.lock.hcl
