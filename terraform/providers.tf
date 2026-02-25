@@ -2,8 +2,16 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.0" 
+      version = "~> 3.0"
     }
+  }
+
+  # --- ДОБАВЛЯЕМ ЭТОТ БЛОК ---
+  backend "azurerm" {
+    resource_group_name  = "rg-devops-pet-project"
+    storage_account_name = "petproject1" # Вставь имя, которое создал выше
+    container_name       = "tfstate"
+    key                  = "terraform.tfstate"
   }
 }
 
