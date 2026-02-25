@@ -8,3 +8,27 @@ resource "azurerm_resource_group" "pet_project_rg" {
     project = "first-pet-project"
   }
 }
+
+# 2. Виртуальная сеть (Бесплатно)
+resource "azurerm_virtual_network" "pet_vnet" {
+  name                = "vnet-pet-project"
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.pet_project_rg.location
+  resource_group_name = azurerm_resource_group.pet_project_rg.name
+}
+
+# 3. Публичная подсеть (для FastAPI контейнеров)
+resource "azurerm_subnet" "public_subnet" {
+  name                 = "snet-public"
+  resource_group_name  = azurerm_resource_group.pet_project_rg.name
+  virtual_network_name = azurerm_virtual_network.pet_vnet.name
+  address_prefixes     = ["10.0.1.0/24"]
+}
+
+# 4. Приватная подсеть (для будущей базы данных)
+resource "azurerm_subnet" "private_subnet" {
+  name                 = "snet-private"
+  resource_group_name  = azurerm_resource_group.pet_project_rg.name
+  virtual_network_name = azurerm_virtual_network.pet_vnet.name
+  address_prefixes     = ["10.0.2.0/24"]
+}
