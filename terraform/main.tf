@@ -72,6 +72,16 @@ resource "azurerm_container_group" "fastapi_cg" {
       port     = 8000
       protocol = "TCP"
     }
+    
+    secure_environment_variables = {
+      "DB_PASSWORD" = random_password.db_password.result
+    }
+
+    environment_variables = {
+      "DB_USER" = "psqladmin"
+      "DB_HOST" = azurerm_postgresql_flexible_server.db_server.fqdn
+      "DB_NAME" = azurerm_postgresql_flexible_server_database.pet_db.name
+    }
   }
 
   # Передаем данные для авторизации в ACR
