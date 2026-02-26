@@ -5,7 +5,7 @@ FROM python:3.11-slim
 WORKDIR /code
 
 # 3. Копируем только файл зависимостей (для кэширования слоев)
-COPY requirements.txt .
+COPY app/requirements.txt .
 
 # 4. Установка библиотек
 # --no-cache-dir уменьшает размер итогового образа
