@@ -1,10 +1,15 @@
-resource "random_id" "suffix" {
-  byte_length = 4
+# resource "random_id" "suffix" {
+#   byte_length = 4
+# }
+
+# ЗАМЕНИ НА СТАТИКУ (используй тот ID, который сейчас в портале, например 2d5ad629)
+locals {
+  suffix = "2d5ad629" 
 }
 
 # 1. ГРУППА РЕСУРСОВ
 resource "azurerm_resource_group" "pet_project_rg" {
-  name     = "rg-devops-pet-${random_id.suffix.hex}"
+  name     = "rg-devops-pet-${local.suffix}"
   location = "North Europe"
 
   tags = {
@@ -16,7 +21,7 @@ resource "azurerm_resource_group" "pet_project_rg" {
 
 # 2. ХРАНИЛИЩЕ ДЛЯ ТЕRRАFORM STATE (Тот самый "дом" для стейта в Ирландии)
 resource "azurerm_storage_account" "tfstate_storage" {
-  name                     = "petproject${random_id.suffix.hex}" # Добавил суффикс для уникальности
+  name                     = "petproject${local.suffix}" # Добавил суффикс для уникальности
   resource_group_name      = azurerm_resource_group.pet_project_rg.name
   location                 = azurerm_resource_group.pet_project_rg.location
   account_tier             = "Standard"
@@ -54,7 +59,7 @@ resource "azurerm_subnet" "private_subnet" {
 # 4. РЕЕСТР КОНТЕЙНЕРОВ (ACR)
 
 resource "azurerm_container_registry" "acr" {
-  name                = "acrpetandrew${random_id.suffix.hex}"
+  name                = "acrpetandrew${local.suffix}"
   resource_group_name = azurerm_resource_group.pet_project_rg.name
   location            = azurerm_resource_group.pet_project_rg.location
   sku                 = "Basic"
@@ -69,7 +74,7 @@ resource "random_password" "db_password" {
 }
 
 resource "azurerm_postgresql_flexible_server" "db_server" {
-  name                   = "psql-pet-project-${random_id.suffix.hex}"
+  name                   = "psql-pet-project-${local.suffix}"
   resource_group_name    = azurerm_resource_group.pet_project_rg.name
   location               = azurerm_resource_group.pet_project_rg.location
   version                = "14"
@@ -95,43 +100,43 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_access" {
 }
 
 # 6. КОНТЕЙНЕР С ПРИЛОЖЕНИЕМ (ACI)
-resource "azurerm_container_group" "fastapi_cg" {
-  name                = "cg-fastapi-app"
-  location            = azurerm_resource_group.pet_project_rg.location
-  resource_group_name = azurerm_resource_group.pet_project_rg.name
-  ip_address_type     = "Public"
-  os_type             = "Linux"
+# resource "azurerm_container_group" "fastapi_cg" {
+#   name                = "cg-fastapi-app"
+#   location            = azurerm_resource_group.pet_project_rg.location
+#   resource_group_name = azurerm_resource_group.pet_project_rg.name
+#   ip_address_type     = "Public"
+#   os_type             = "Linux"
 
-  depends_on = [ azurerm_postgresql_flexible_server_database.pet_db ]
+#   depends_on = [ azurerm_postgresql_flexible_server_database.pet_db ]
 
-  container {
-    name   = "fastapi-container"
-    image  = "${azurerm_container_registry.acr.login_server}/fastapi-app:latest"
-    cpu    = "0.5"
-    memory = "1.0"
+#   container {
+#     name   = "fastapi-container"
+#     image  = "${azurerm_container_registry.acr.login_server}/fastapi-app:latest"
+#     cpu    = "0.5"
+#     memory = "1.0"
 
-    ports {
-      port     = 8000
-      protocol = "TCP"
-    }
+#     ports {
+#       port     = 8000
+#       protocol = "TCP"
+#     }
     
-    secure_environment_variables = {
-      "DB_PASSWORD" = random_password.db_password.result
-    }
+#     secure_environment_variables = {
+#       "DB_PASSWORD" = random_password.db_password.result
+#     }
 
-    environment_variables = {
-      "DB_USER" = "psqladmin"
-      "DB_HOST" = azurerm_postgresql_flexible_server.db_server.fqdn
-      "DB_NAME" = azurerm_postgresql_flexible_server_database.pet_db.name
-    }
-  }
+#     environment_variables = {
+#       "DB_USER" = "psqladmin"
+#       "DB_HOST" = azurerm_postgresql_flexible_server.db_server.fqdn
+#       "DB_NAME" = azurerm_postgresql_flexible_server_database.pet_db.name
+#     }
+#   }
 
-  image_registry_credential {
-    server   = azurerm_container_registry.acr.login_server
-    username = azurerm_container_registry.acr.admin_username
-    password = azurerm_container_registry.acr.admin_password
-  }
-}
+#   image_registry_credential {
+#     server   = azurerm_container_registry.acr.login_server
+#     username = azurerm_container_registry.acr.admin_username
+#     password = azurerm_container_registry.acr.admin_password
+#   }
+# }
 
 # 7. ВЫВОД ДАННЫХ (OUTPUTS)
 output "app_url" {
