@@ -7,12 +7,12 @@ terraform {
   }
 
   # --- ДОБАВЛЯЕМ ЭТОТ БЛОК ---
-  backend "azurerm" {
-    resource_group_name  = "rg-devops-pet-2d5ad629" 
-    storage_account_name = "petproject2d5ad629" # Вставь имя, которое создал выше
-    container_name       = "tfstate"
-    key                  = "terraform.tfstate"
-  }
+  # backend "azurerm" {
+  #   resource_group_name  = "rg-devops-pet-2d5ad629" 
+  #   storage_account_name = "petproject2d5ad629" # Вставь имя, которое создал выше
+  #   container_name       = "tfstate"
+  #   key                  = "terraform.tfstate"
+  # }
 }
 
 provider "azurerm" {
