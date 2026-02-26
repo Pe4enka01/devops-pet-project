@@ -54,3 +54,34 @@ resource "azurerm_container_registry" "acr" {
 output "acr_name" {
   value = azurerm_container_registry.acr.name
 }
+
+resource "azurerm_container_group" "fastapi_cg" {
+  name                = "cg-fastapi-app"
+  location            = azurerm_resource_group.pet_project_rg.location
+  resource_group_name = azurerm_resource_group.pet_project_rg.name
+  ip_address_type     = "Public"
+  os_type             = "Linux"
+
+  container {
+    name   = "fastapi-container"
+    image  = "${azurerm_container_registry.acr.login_server}/fastapi-app:latest"
+    cpu    = "0.5" # Берем минимум, чтобы сэкономить
+    memory = "1.0"
+
+    ports {
+      port     = 8000
+      protocol = "TCP"
+    }
+  }
+
+  # Передаем данные для авторизации в ACR
+  image_registry_credential {
+    server   = azurerm_container_registry.acr.login_server
+    username = azurerm_container_registry.acr.admin_username
+    password = azurerm_container_registry.acr.admin_password
+  }
+}
+
+output "app_url" {
+  value = "http://${azurerm_container_group.fastapi_cg.ip_address}:8000"
+}

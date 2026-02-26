@@ -24,6 +24,19 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    # --- НОВЫЙ БЛОК: ЛИНТЕР ---
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11' # Фиксированная версия Python
+
+    - name: Install Linter
+      run: pip install flake8
+
+    - name: Run Linter
+      run: flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
+      working-directory: . # Работаем из корня, чтобы линтер видел весь код
+
     - name: Azure Login
       uses: azure/login@v2
       with:
