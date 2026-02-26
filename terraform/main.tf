@@ -32,3 +32,25 @@ resource "azurerm_subnet" "private_subnet" {
   virtual_network_name = azurerm_virtual_network.pet_vnet.name
   address_prefixes     = ["10.0.2.0/24"]
 }
+
+# Генератор случайных 4 символов для уникальности имени
+resource "random_string" "acr_suffix" {
+  length  = 4
+  special = false
+  upper   = false
+}
+
+# Ресурс ACR
+resource "azurerm_container_registry" "acr" {
+  # Итоговое имя будет типа acrpetandrew1234
+  name                = "acrpetandrew${random_string.acr_suffix.result}"
+  resource_group_name = azurerm_resource_group.pet_project_rg.name
+  location            = azurerm_resource_group.pet_project_rg.location
+  sku                 = "Basic"
+  admin_enabled       = true
+}
+
+# Важный Output: он выведет имя в консоль GitHub Actions, чтобы Docker знал куда пушить
+output "acr_name" {
+  value = azurerm_container_registry.acr.name
+}
