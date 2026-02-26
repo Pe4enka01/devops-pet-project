@@ -1,6 +1,6 @@
 # 1. ГРУППА РЕСУРСОВ
 resource "azurerm_resource_group" "pet_project_rg" {
-  name     = "rg-devops-pet-mnfx"
+  name     = "rg-devops-pet-mnfx1"
   location = "North Europe"
 
   tags = {
