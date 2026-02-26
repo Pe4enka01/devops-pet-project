@@ -136,6 +136,6 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_access" {
 #   value = "http://${azurerm_container_group.fastapi_cg.ip_address}:8000"
 # }
 
-output "db_host" {
-  value = azurerm_postgresql_flexible_server.db_server.fqdn
-}
+# output "db_host" {
+#   value = azurerm_postgresql_flexible_server.db_server.fqdn
+# }
