@@ -21,3 +21,7 @@ Thumbs.db
 *.tfvars
 *.tfvars.json
 .terraform.lock.hcl
+*.tfplan
+
+# Логи сборки Docker (иногда создаются локально)
+*.log
