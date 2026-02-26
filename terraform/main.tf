@@ -1,6 +1,6 @@
 # 1. ГРУППА РЕСУРСОВ
 resource "azurerm_resource_group" "pet_project_rg" {
-  name     = "rg-devops-pet-project"
+  name     = "rg-devops-pet-${random_string.acr_suffix.result}"
   location = "North Europe"
 
   tags = {
