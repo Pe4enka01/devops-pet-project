@@ -1,6 +1,6 @@
 # 1. ГРУППА РЕСУРСОВ
 resource "azurerm_resource_group" "pet_project_rg" {
-  name     = "rg-devops-pet-${random_string.acr_suffix.result}"
+  name     = "rg-devops-pet-mnfx"
   location = "North Europe"
 
   tags = {
@@ -12,7 +12,7 @@ resource "azurerm_resource_group" "pet_project_rg" {
 
 # 2. ХРАНИЛИЩЕ ДЛЯ ТЕRRАFORM STATE (Тот самый "дом" для стейта в Ирландии)
 resource "azurerm_storage_account" "tfstate_storage" {
-  name                     = "petproject1${random_string.acr_suffix.result}" # Добавил суффикс для уникальности
+  name                     = "petproject1mnfx" # Добавил суффикс для уникальности
   resource_group_name      = azurerm_resource_group.pet_project_rg.name
   location                 = azurerm_resource_group.pet_project_rg.location
   account_tier             = "Standard"
@@ -55,7 +55,7 @@ resource "random_string" "acr_suffix" {
 }
 
 resource "azurerm_container_registry" "acr" {
-  name                = "acrpetandrew${random_string.acr_suffix.result}"
+  name                = "acrpetandrewmnfx"
   resource_group_name = azurerm_resource_group.pet_project_rg.name
   location            = azurerm_resource_group.pet_project_rg.location
   sku                 = "Basic"
@@ -70,7 +70,7 @@ resource "random_password" "db_password" {
 }
 
 resource "azurerm_postgresql_flexible_server" "db_server" {
-  name                   = "psql-pet-project-${random_string.acr_suffix.result}"
+  name                   = "psql-pet-project-mnfx"
   resource_group_name    = azurerm_resource_group.pet_project_rg.name
   location               = azurerm_resource_group.pet_project_rg.location
   version                = "14"
