@@ -58,7 +58,7 @@ jobs:
 
     - name: Login to ACR
       run: |
-        az acr login --name acrpetandrew4htc
+        az acr login --name acrpetandrew2d5ad629
       working-directory: . # Работаем из корня
 
     - name: Build and Push Docker Image
