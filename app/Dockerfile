@@ -12,7 +12,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 5. Копируем остальной код (main.py) в текущую папку (/code)
-COPY . .
+COPY app/ .
 
 # 6. Пробрасываем порт (чисто информативно для Docker)
 EXPOSE 8000

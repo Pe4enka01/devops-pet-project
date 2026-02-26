@@ -42,3 +42,21 @@ jobs:
 
     - name: Terraform Apply
       run: terraform apply -auto-approve
+
+    - name: Login to ACR
+      run: |
+        az acr login --name acrpetandrew4htc
+      working-directory: . # Работаем из корня
+
+    - name: Build and Push Docker Image
+      run: |
+        # Собираем образ. Точка в конце означает "текущая директория" (корень)
+        docker build -t acrpetandrew4htc.azurecr.io/fastapi-app:${{ github.sha }} -f app/Dockerfile .
+        
+        # Пушим версию с хэшем
+        docker push acrpetandrew4htc.azurecr.io/fastapi-app:${{ github.sha }}
+        
+        # Тегируем как latest и пушим
+        docker tag acrpetandrew4htc.azurecr.io/fastapi-app:${{ github.sha }} acrpetandrew4htc.azurecr.io/fastapi-app:latest
+        docker push acrpetandrew4htc.azurecr.io/fastapi-app:latest
+      working-directory: . # Работаем из корня
