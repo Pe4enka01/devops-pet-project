@@ -6,9 +6,8 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 app = FastAPI()
 
-@app.on_event("startup")
-async def startup():
-    Instrumentator().instrument(app).expose(app)
+# Add Prometheus metrics instrumentation
+Instrumentator().instrument(app).expose(app)
 
 # Получаем данные из переменных окружения (их передаст Docker/Terraform)
 DB_USER = os.getenv("DB_USER", "psqladmin")
