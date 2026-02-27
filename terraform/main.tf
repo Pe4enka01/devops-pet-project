@@ -4,7 +4,7 @@
 
 # ЗАМЕНИ НА СТАТИКУ (используй тот ID, который сейчас в портале, например 2d5ad629)
 locals {
-  suffix = "2d5ad629" 
+  suffix = "2d5ad629"
 }
 
 # 1. ГРУППА РЕСУРСОВ
@@ -82,7 +82,7 @@ resource "azurerm_postgresql_flexible_server" "db_server" {
   administrator_password = random_password.db_password.result
   storage_mb             = 32768
   sku_name               = "B_Standard_B1ms"
-  backup_retention_days = 7
+  backup_retention_days  = 7
 
   lifecycle {
     ignore_changes = [
@@ -114,19 +114,20 @@ resource "azurerm_container_group" "fastapi_cg" {
   ip_address_type     = "Public"
   os_type             = "Linux"
 
-  depends_on = [ azurerm_postgresql_flexible_server_database.pet_db ]
+  depends_on = [azurerm_postgresql_flexible_server_database.pet_db]
 
+  # ─── FASTAPI APP ────────────────────────────────────────────────────────────
   container {
     name   = "fastapi-container"
     image  = "${azurerm_container_registry.acr.login_server}/fastapi-app:latest"
-    cpu    = "0.5"
-    memory = "1.0"
+    cpu    = 0.5
+    memory = 1.0
 
     ports {
       port     = 8000
       protocol = "TCP"
     }
-    
+
     secure_environment_variables = {
       "DB_PASSWORD" = random_password.db_password.result
     }
@@ -138,6 +139,42 @@ resource "azurerm_container_group" "fastapi_cg" {
     }
   }
 
+  # ─── PROMETHEUS SIDECAR ─────────────────────────────────────────────────────
+  # "Sidecar" = a helper container that runs alongside your main app
+  # in the same container group (same network, same lifecycle)
+  container {
+    name   = "prometheus"
+    image  = "${azurerm_container_registry.acr.login_server}/custom-prometheus:latest"
+    cpu    = 0.25
+    memory = 0.5
+
+    ports {
+      port     = 9090
+      protocol = "TCP"
+    }
+  }
+
+  # ─── GRAFANA SIDECAR ────────────────────────────────────────────────────────
+  # Grafana is the visualization layer — it reads from Prometheus and shows dashboards
+  container {
+    name = "grafana"
+    # Pinned to stable release — check https://github.com/grafana/grafana/releases
+    image  = "grafana/grafana:10.4.2"
+    cpu    = 0.25
+    memory = 0.5
+
+    ports {
+      port     = 3000
+      protocol = "TCP"
+    }
+
+    environment_variables = {
+      "GF_PATHS_PROVISIONING"      = "/etc/grafana/provisioning"
+      "GF_AUTH_ANONYMOUS_ENABLED"  = "true"
+      "GF_AUTH_ANONYMOUS_ORG_ROLE" = "Viewer"
+    }
+  }
+
   image_registry_credential {
     server   = azurerm_container_registry.acr.login_server
     username = azurerm_container_registry.acr.admin_username
@@ -145,9 +182,21 @@ resource "azurerm_container_group" "fastapi_cg" {
   }
 }
 
+
 # 7. ВЫВОД ДАННЫХ (OUTPUTS)
+# These are printed to the terminal after "terraform apply" completes
 output "app_url" {
   value = "http://${azurerm_container_group.fastapi_cg.ip_address}:8000"
+}
+
+output "prometheus_url" {
+  description = "Open /targets here to confirm FastAPI is being scraped"
+  value       = "http://${azurerm_container_group.fastapi_cg.ip_address}:9090"
+}
+
+output "grafana_url" {
+  description = "Grafana UI — login admin/admin, add Prometheus datasource at localhost:9090"
+  value       = "http://${azurerm_container_group.fastapi_cg.ip_address}:3000"
 }
 
 output "db_host" {

@@ -2,3 +2,4 @@ fastapi==0.110.0
 uvicorn==0.27.1
 psycopg2-binary
 sqlalchemy
+prometheus-fastapi-instrumentator

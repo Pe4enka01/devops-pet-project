@@ -1,0 +1,95 @@
+name: 'Terraform Deploy'
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  terraform:
+    name: 'Terraform'
+    runs-on: ubuntu-22.04
+
+    env:
+      ARM_CLIENT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientId }}
+      ARM_CLIENT_SECRET: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientSecret }}
+      ARM_SUBSCRIPTION_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
+      ARM_TENANT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).tenantId }}
+
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Linter
+      run: pip install flake8
+
+    - name: Run Linter
+      run: flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
+      working-directory: .
+
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.7.0"
+
+    - name: Ensure Backend Storage Exists
+      run: |
+        az group create --name rg-terraform-tfstate --location northeurope
+        az storage account create --name tfstatepetproject2d5ad --resource-group rg-terraform-tfstate --sku Standard_LRS
+        az storage container create --name tfstate --account-name tfstatepetproject2d5ad || true
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Plan
+      run: terraform plan
+
+    # ❌ BUG 1: Terraform Apply runs HERE —
+    #    but at this point custom-prometheus:latest does NOT exist in ACR yet!
+    #    Azure will try to pull it and FAIL to start the container.
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
+
+    - name: Login to ACR
+      run: |
+        az acr login --name acrpetandrew2d5ad629
+      working-directory: .
+
+    # ❌ BUG 2: Images are built AFTER Terraform already tried to use them.
+    #    Too late — the ACI container group is already broken at this point.
+    - name: Build and Push Docker Image
+      run: |
+        docker build -t acrpetandrew2d5ad629.azurecr.io/fastapi-app:${{ github.sha }} -f app/Dockerfile .
+        docker push acrpetandrew2d5ad629.azurecr.io/fastapi-app:${{ github.sha }}
+        docker tag acrpetandrew2d5ad629.azurecr.io/fastapi-app:${{ github.sha }} acrpetandrew2d5ad629.azurecr.io/fastapi-app:latest
+        docker push acrpetandrew2d5ad629.azurecr.io/fastapi-app:latest
+      working-directory: .
+
+    # ❌ BUG 3: Wrong YAML indentation — 2 extra spaces before "- name:"
+    # This would cause GitHub Actions to fail parsing the entire workflow file.
+  # <- wrong indent (2 spaces = job level, not step level!)
+    - name: Build and Push Custom Prometheus Image
+      run: |
+        docker build \
+          -t acrpetandrew2d5ad629.azurecr.io/custom-prometheus:${{ github.sha }} \
+          -f prometheus/Dockerfile \
+          ./prometheus
+        docker push acrpetandrew2d5ad629.azurecr.io/custom-prometheus:${{ github.sha }}
+        docker tag \
+          acrpetandrew2d5ad629.azurecr.io/custom-prometheus:${{ github.sha }} \
+          acrpetandrew2d5ad629.azurecr.io/custom-prometheus:latest
+        docker push acrpetandrew2d5ad629.azurecr.io/custom-prometheus:latest
+      working-directory: .

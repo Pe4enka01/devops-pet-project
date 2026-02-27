@@ -7,10 +7,9 @@ on:
 jobs:
   terraform:
     name: 'Terraform'
-    runs-on: ubuntu-22.04 # Фиксированная версия
-    
+    runs-on: ubuntu-22.04
+
     env:
-      # Распаковываем JSON-секрет прямо в переменные, которые понимает Terraform
       ARM_CLIENT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientId }}
       ARM_CLIENT_SECRET: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientSecret }}
       ARM_SUBSCRIPTION_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
@@ -24,24 +23,67 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    # --- НОВЫЙ БЛОК: ЛИНТЕР ---
+    # ── STEP 1: Lint Python code ────────────────────────────────────────────────
+    # Catch syntax errors before wasting time on infra provisioning
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11' # Фиксированная версия Python
+        python-version: '3.11'
 
     - name: Install Linter
       run: pip install flake8
 
     - name: Run Linter
       run: flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
-      working-directory: . # Работаем из корня, чтобы линтер видел весь код
+      working-directory: .
 
+    # ── STEP 2: Auth ────────────────────────────────────────────────────────────
     - name: Azure Login
       uses: azure/login@v2
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+    # ── STEP 3: Build & Push Images ─────────────────────────────────────────────
+    # IMPORTANT: Images must exist in ACR BEFORE Terraform apply references them.
+    # If we ran Terraform first, Azure would try to pull images that don't exist yet.
+    - name: Login to ACR
+      run: az acr login --name acrpetandrew2d5ad629
+      working-directory: .
+
+    - name: Build and Push FastAPI Image
+      run: |
+        # Build using app/Dockerfile, context is repo root (.)
+        docker build -t acrpetandrew2d5ad629.azurecr.io/fastapi-app:${{ github.sha }} -f app/Dockerfile .
+
+        # SHA tag = immutable, always traceable to a specific commit
+        docker push acrpetandrew2d5ad629.azurecr.io/fastapi-app:${{ github.sha }}
+
+        # "latest" tag = what Terraform references so it doesn't need to know the SHA
+        docker tag acrpetandrew2d5ad629.azurecr.io/fastapi-app:${{ github.sha }} acrpetandrew2d5ad629.azurecr.io/fastapi-app:latest
+        docker push acrpetandrew2d5ad629.azurecr.io/fastapi-app:latest
+      working-directory: .
+
+    - name: Build and Push Custom Prometheus Image
+      run: |
+        # Custom image with our prometheus.yml baked in (no file shares needed)
+        # -f = Dockerfile path, ./prometheus = build context (where COPY reads from)
+        docker build \
+          -t acrpetandrew2d5ad629.azurecr.io/custom-prometheus:${{ github.sha }} \
+          -f prometheus/Dockerfile \
+          ./prometheus
+
+        docker push acrpetandrew2d5ad629.azurecr.io/custom-prometheus:${{ github.sha }}
+
+        docker tag \
+          acrpetandrew2d5ad629.azurecr.io/custom-prometheus:${{ github.sha }} \
+          acrpetandrew2d5ad629.azurecr.io/custom-prometheus:latest
+
+        docker push acrpetandrew2d5ad629.azurecr.io/custom-prometheus:latest
+      working-directory: .
+
+    # ── STEP 4: Provision Infrastructure ────────────────────────────────────────
+    # Now that images exist in ACR, Terraform can safely reference them.
+    # Azure will be able to pull them when the ACI container group starts.
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
@@ -52,7 +94,7 @@ jobs:
         az group create --name rg-terraform-tfstate --location northeurope
         az storage account create --name tfstatepetproject2d5ad --resource-group rg-terraform-tfstate --sku Standard_LRS
         az storage container create --name tfstate --account-name tfstatepetproject2d5ad || true
-        
+
     - name: Terraform Init
       run: terraform init
 
@@ -61,21 +103,3 @@ jobs:
 
     - name: Terraform Apply
       run: terraform apply -auto-approve
-
-    - name: Login to ACR
-      run: |
-        az acr login --name acrpetandrew2d5ad629
-      working-directory: . # Работаем из корня
-
-    - name: Build and Push Docker Image
-      run: |
-        # Собираем образ. Точка в конце означает "текущая директория" (корень)
-        docker build -t acrpetandrew2d5ad629.azurecr.io/fastapi-app:${{ github.sha }} -f app/Dockerfile .
-        
-        # Пушим версию с хэшем
-        docker push acrpetandrew2d5ad629.azurecr.io/fastapi-app:${{ github.sha }}
-        
-        # Тегируем как latest и пушим
-        docker tag acrpetandrew2d5ad629.azurecr.io/fastapi-app:${{ github.sha }} acrpetandrew2d5ad629.azurecr.io/fastapi-app:latest
-        docker push acrpetandrew2d5ad629.azurecr.io/fastapi-app:latest
-      working-directory: . # Работаем из корня
