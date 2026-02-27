@@ -116,6 +116,26 @@ resource "azurerm_container_group" "fastapi_cg" {
 
   depends_on = [azurerm_postgresql_flexible_server_database.pet_db]
 
+  # ── CRITICAL: Azure ACI requires ports declared in TWO places: ───────────────
+  # 1. Inside each container{} — tells the container what to LISTEN on internally
+  # 2. Here (exposed_port on the GROUP) — tells Azure to open these ports to the
+  #    public internet. Without this block, all external traffic is silently refused
+  #    even though the container is listening. This was the cause of "connection reset".
+  exposed_port {
+    port     = 8000
+    protocol = "TCP"
+  }
+
+  exposed_port {
+    port     = 9090
+    protocol = "TCP"
+  }
+
+  exposed_port {
+    port     = 3000
+    protocol = "TCP"
+  }
+
   # ─── FASTAPI APP ────────────────────────────────────────────────────────────
   container {
     name   = "fastapi-container"
