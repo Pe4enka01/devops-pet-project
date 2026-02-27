@@ -47,6 +47,12 @@ jobs:
       with:
         terraform_version: "1.7.0"
 
+    - name: Ensure Backend Storage Exists
+      run: |
+        az group create --name rg-terraform-tfstate --location northeurope
+        az storage account create --name tfstatepetproject2d5ad --resource-group rg-terraform-tfstate --sku Standard_LRS
+        az storage container create --name tfstate --account-name tfstatepetproject2d5ad || true
+        
     - name: Terraform Init
       run: terraform init
 

@@ -8,8 +8,8 @@ terraform {
 
   # --- ДОБАВЛЯЕМ ЭТОТ БЛОК ---
   backend "azurerm" {
-    resource_group_name  = "rg-devops-pet-2d5ad629" 
-    storage_account_name = "petproject2d5ad629" # Вставь имя, которое создал выше
+    resource_group_name  = "rg-terraform-tfstate"      # Вечная группа
+    storage_account_name = "tfstatepetproject2d5ad"    # Вечный сторедж
     container_name       = "tfstate"
     key                  = "terraform.tfstate"
   }
