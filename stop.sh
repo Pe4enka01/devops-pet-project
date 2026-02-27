@@ -20,6 +20,11 @@ echo "🛑 Stopping expensive Azure resources..."
 echo "   (Your code, images, and Terraform state are safe)"
 echo ""
 
+# Initialize Terraform (syncs with the remote state in Azure)
+echo "🔄 Initializing Terraform..."
+terraform init -upgrade
+terraform init -reconfigure
+
 # Order matters: destroy resources that depend on others first
 terraform destroy \
   -target=azurerm_container_group.fastapi_cg \

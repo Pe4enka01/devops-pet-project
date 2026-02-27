@@ -16,6 +16,11 @@ cd "$(dirname "$0")/terraform"
 echo "🚀 Starting Azure resources..."
 echo ""
 
+# Initialize Terraform (syncs with the remote state in Azure)
+echo "🔄 Initializing Terraform..."
+terraform init -upgrade
+terraform init -reconfigure 
+
 terraform apply -auto-approve
 
 echo ""
