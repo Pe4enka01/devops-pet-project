@@ -106,49 +106,49 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_access" {
   end_ip_address   = "0.0.0.0"
 }
 
-# # 6. КОНТЕЙНЕР С ПРИЛОЖЕНИЕМ (ACI)
-# resource "azurerm_container_group" "fastapi_cg" {
-#   name                = "cg-fastapi-app"
-#   location            = azurerm_resource_group.pet_project_rg.location
-#   resource_group_name = azurerm_resource_group.pet_project_rg.name
-#   ip_address_type     = "Public"
-#   os_type             = "Linux"
+# 6. КОНТЕЙНЕР С ПРИЛОЖЕНИЕМ (ACI)
+resource "azurerm_container_group" "fastapi_cg" {
+  name                = "cg-fastapi-app"
+  location            = azurerm_resource_group.pet_project_rg.location
+  resource_group_name = azurerm_resource_group.pet_project_rg.name
+  ip_address_type     = "Public"
+  os_type             = "Linux"
 
-#   depends_on = [ azurerm_postgresql_flexible_server_database.pet_db ]
+  depends_on = [ azurerm_postgresql_flexible_server_database.pet_db ]
 
-#   container {
-#     name   = "fastapi-container"
-#     image  = "${azurerm_container_registry.acr.login_server}/fastapi-app:latest"
-#     cpu    = "0.5"
-#     memory = "1.0"
+  container {
+    name   = "fastapi-container"
+    image  = "${azurerm_container_registry.acr.login_server}/fastapi-app:latest"
+    cpu    = "0.5"
+    memory = "1.0"
 
-#     ports {
-#       port     = 8000
-#       protocol = "TCP"
-#     }
+    ports {
+      port     = 8000
+      protocol = "TCP"
+    }
     
-#     secure_environment_variables = {
-#       "DB_PASSWORD" = random_password.db_password.result
-#     }
+    secure_environment_variables = {
+      "DB_PASSWORD" = random_password.db_password.result
+    }
 
-#     environment_variables = {
-#       "DB_USER" = "psqladmin"
-#       "DB_HOST" = azurerm_postgresql_flexible_server.db_server.fqdn
-#       "DB_NAME" = azurerm_postgresql_flexible_server_database.pet_db.name
-#     }
-#   }
+    environment_variables = {
+      "DB_USER" = "psqladmin"
+      "DB_HOST" = azurerm_postgresql_flexible_server.db_server.fqdn
+      "DB_NAME" = azurerm_postgresql_flexible_server_database.pet_db.name
+    }
+  }
 
-#   image_registry_credential {
-#     server   = azurerm_container_registry.acr.login_server
-#     username = azurerm_container_registry.acr.admin_username
-#     password = azurerm_container_registry.acr.admin_password
-#   }
-# }
+  image_registry_credential {
+    server   = azurerm_container_registry.acr.login_server
+    username = azurerm_container_registry.acr.admin_username
+    password = azurerm_container_registry.acr.admin_password
+  }
+}
 
-# # 7. ВЫВОД ДАННЫХ (OUTPUTS)
-# output "app_url" {
-#   value = "http://${azurerm_container_group.fastapi_cg.ip_address}:8000"
-# }
+# 7. ВЫВОД ДАННЫХ (OUTPUTS)
+output "app_url" {
+  value = "http://${azurerm_container_group.fastapi_cg.ip_address}:8000"
+}
 
 output "db_host" {
   value = azurerm_postgresql_flexible_server.db_server.fqdn
