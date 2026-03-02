@@ -9,11 +9,11 @@ locals {
 
 # 1. ГРУППА РЕСУРСОВ
 resource "azurerm_resource_group" "pet_project_rg" {
-  name     = "rg-devops-pet-${local.suffix}"
-  location = "North Europe"
+  name     = "${var.resource_group_name}-${local.suffix}"
+  location = var.location
 
   tags = {
-    environment = "dev"
+    environment = var.environment
     owner       = "Andrew"
     project     = "first-pet-project"
   }
