@@ -1,3 +1,4 @@
 Hello! This is an example file to demonstrate merge conflicts.
 
 This line is for the HOTFIX we are applying directly to the main branch!
+This line is for the feature we are building in the dev-feature branch.
