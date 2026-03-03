@@ -99,7 +99,18 @@ jobs:
       run: terraform init
 
     - name: Terraform Plan
-      run: terraform plan
+      run: |
+        terraform plan \
+          -input=false \
+          -var="resource_group_name=rg-devops-pet" \
+          -var="location=North Europe" \
+          -var="environment=dev"
 
     - name: Terraform Apply
-      run: terraform apply -auto-approve
+      run: |
+        terraform apply \
+          -auto-approve \
+          -input=false \
+          -var="resource_group_name=rg-devops-pet" \
+          -var="location=North Europe" \
+          -var="environment=dev"
