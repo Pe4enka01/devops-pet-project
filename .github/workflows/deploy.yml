@@ -4,6 +4,12 @@ on:
   push:
     branches: [ "main" ]
 
+# Only one deploy can run at a time. If a new push arrives, cancel the old run first.
+# This prevents two Terraform runs from fighting over the state lock.
+concurrency:
+  group: terraform-deploy
+  cancel-in-progress: true
+
 jobs:
   terraform:
     name: 'Terraform'
